@@ -1,0 +1,9 @@
+venv/*
+venv
+dataset/*
+dataset
+joined_timestamps
+joined_timestamps/*
+separed_timestamps/*
+separed_timestamps
+elliptic.pt
