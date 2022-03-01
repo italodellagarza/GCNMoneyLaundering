@@ -1,14 +1,26 @@
 # Redes Neurais de Grafos Aplicadas à Detecção de Lavagem de Dinheiro
 
-Projeto em execução. Por hora, foi implementada a metodologia do artigo ["Anti-Money Laundering in Bitcoin: Experimenting with Graph Convolutional Networks for Financial Forensics"][1].
+Projeto em construção. Implementações e testes ainda sendo realizados.
 
-A base de dados utilizada é a [Elliptico][2].
+## Instalação
 
-Os testes feitos com a GCN simples descrita no artigo, implementada com o Pytorch Geometric estão no arquivo `gcn_crua_testes.ipynb`.
-A mesma implementação, porém implementada somente com o Pytorch, está no arquivo `gcn_kaggle_testes.ipynb`, encontrada no Kaggle [[3]].
-A implementação da _Skip_ GCN está em `skip_gcn_tests.ipynb`.
+Para instalar o projeto, é necessário ter o [Python][1] e o [Virtualenv][2] instalados.
 
-[2]: https://www.kaggle.com/ellipticco/elliptic-data-set
-[1]: https://arxiv.org/pdf/1908.02591.pdf
-[3]: https://www.kaggle.com/karthikapv/gcn-elliptic-dataset 
+[1]: https://www.python.org/downloads/
+[2]: https://virtualenv.pypa.io/en/latest/
 
+Tendo as dependências instaladas, entre na pasta raiz do projeto e execute os comandos:
+
+`virtualenv -p python39 venv`
+
+`source venv/bin/activate`
+
+`pip install -r requirements.txt`
+
+## Execução
+
+É necessário estar no ambiente virtual para executar qualquer uma das implementações:
+
+`source venv/bin/activate`
+
+Após isso, entre em qualquer uma das pastas e siga as instruções em seu arquivo `README.md`.

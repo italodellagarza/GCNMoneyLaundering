@@ -1,9 +1,8 @@
 venv/*
-venv
-dataset/*
-dataset
-joined_timestamps
-joined_timestamps/*
-separed_timestamps/*
-separed_timestamps
-elliptic.pt
+test_elliptic_gcn/elliptic_bitcoin_dataset/*
+test_elliptic_gcn/modelDir/*
+test_elliptic_gcn/elliptic_pt/*
+test_amlsim_nenn/1Kvertices-100Kedges/*
+test_amlsim_nenn/1Kvertices-100Kedges_pt/*
+
+
