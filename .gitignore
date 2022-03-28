@@ -4,5 +4,6 @@ test_elliptic_gcn/modelDir/*
 test_elliptic_gcn/elliptic_pt/*
 test_amlsim_nenn/1Kvertices-100Kedges/*
 test_amlsim_nenn/1Kvertices-100Kedges_pt/*
-
+test_amlsim_nenn/10Kvertices-1Medges/*
+test_amlsim_nenn/10Kvertices-1Medges-undersampling/*
 
