@@ -6,4 +6,7 @@ test_amlsim_nenn/1Kvertices-100Kedges/*
 test_amlsim_nenn/1Kvertices-100Kedges_pt/*
 test_amlsim_nenn/10Kvertices-1Medges/*
 test_amlsim_nenn/10Kvertices-1Medges-undersampling/*
+test_amlsim_nenn/.ipynb_checkpoints/undersampling-checkpoint.ipynb
+test_amlsim_nenn/10Kvertices-1Medges-undersampling_new/
+test_amlsim_nenn/new_1M/
 
