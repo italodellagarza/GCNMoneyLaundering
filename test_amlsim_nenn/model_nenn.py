@@ -128,6 +128,7 @@ class Nenn(Module):
         node_to_node_adj_matrix,
     ):
         edge_embeds1 = self.layer1(node_features, edge_features, edge_to_edge_adj_matrix, node_to_edge_adj_matrix)
+        print(edge_embeds1)
         node_embeds = self.layer2(node_features, edge_embeds1, node_to_node_adj_matrix, edge_to_node_adj_matrix)
         #print(node_embeds)
         edge_embeds2 = self.layer3(node_embeds, edge_embeds1, edge_to_edge_adj_matrix, node_to_edge_adj_matrix)
