@@ -1,10 +1,19 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# Created By  : Ítalo Della Garza Silva
+# Created Date: date/month/time
+#
+# test_nenn_amlsim.py: Tests for NENN GNN
+#
+
 import os
 import sys
 import torch
+import random
 import numpy as np
 import scipy
-from torch_geometric.data import Data
-from model_nenn_simplificado import Nenn
+from model_nenn import Nenn
 from sklearn.metrics import precision_score, recall_score, f1_score
 
 
@@ -19,7 +28,7 @@ def get_confidence_intervals(metric_list, n_repeats):
     se = np.sqrt((1.0 / (n_repeats - 1)) * se)
     ci_length = t_value * se
 
-    return (metric_avg, ci_length)
+    return metric_avg, ci_length
         
 
 
@@ -45,7 +54,6 @@ def main():
     train_data = dataset[0:int(0.8*366)]
     test_data = dataset[int(0.8*366):]
 
-
     # Executions
     precisions_macro = []
     recalls_macro = []
@@ -54,7 +62,6 @@ def main():
     f1s_0 = []
     precisions_0= []
     recalls_0 = []
-    
 
     for execution in range(n_repeats):
         print(f'EXECUTION {execution}\n')
@@ -74,8 +81,7 @@ def main():
 
         loss = torch.nn.CrossEntropyLoss(weight=weight)
 
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 
         # Training the model
         model.train()
@@ -84,27 +90,20 @@ def main():
                 # Reset gradients
                 optimizer.zero_grad()
                 # Send info to the model
-                logits = model(
+                logits, _ = model(
                     data.x.T.type(torch.FloatTensor),
                     data.edge_attr.T.type(torch.FloatTensor),
-                    data.edge_to_edge_adj_matr.type(torch.FloatTensor),
-                    data.edge_to_node_adj_matr.type(torch.FloatTensor),
-                    data.node_to_edge_adj_matr.type(torch.FloatTensor),
-                    data.node_to_node_adj_matr.type(torch.FloatTensor)
+                    data.edge_to_edge_adj_matr.T.type(torch.FloatTensor),
+                    data.edge_to_node_adj_matr.T.type(torch.FloatTensor),
+                    data.node_to_edge_adj_matr.T.type(torch.FloatTensor),
+                    data.node_to_node_adj_matr.T.type(torch.FloatTensor)
                 )
                 # Calculate loss
                 l = loss(logits, data.y)
                 l.backward()
                 # Update gradients
                 optimizer.step()
-            if np.isnan(l.item()):
-                model = None
-                break
             print('epoch =', epoch + 1, 'loss =', l.item())
-
-        if not model:
-            execution -= 1
-            continue
 
         label_pred_list = []
         y_true_list = []
@@ -114,13 +113,13 @@ def main():
         with torch.no_grad():
             for data in test_data:
                 data.to('cpu')
-                logits = model(
+                logits, _ = model(
                     data.x.T.type(torch.FloatTensor),
                     data.edge_attr.T.type(torch.FloatTensor),
-                    data.edge_to_edge_adj_matr.type(torch.FloatTensor),
-                    data.edge_to_node_adj_matr.type(torch.FloatTensor),
-                    data.node_to_edge_adj_matr.type(torch.FloatTensor),
-                    data.node_to_node_adj_matr.type(torch.FloatTensor)
+                    data.edge_to_edge_adj_matr.T.type(torch.FloatTensor),
+                    data.edge_to_node_adj_matr.T.type(torch.FloatTensor),
+                    data.node_to_edge_adj_matr.T.type(torch.FloatTensor),
+                    data.node_to_node_adj_matr.T.type(torch.FloatTensor)
                 )
                 label_pred = logits.max(1)[1].tolist()
                 label_pred_list += label_pred
@@ -169,11 +168,6 @@ def main():
     with open(f'results/{output}.txt', 'w') as file:
         file.write(result)
         file.close()
-
-        
-        
-
-
 
 
 if __name__ == '__main__':

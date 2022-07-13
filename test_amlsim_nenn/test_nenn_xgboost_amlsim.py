@@ -1,11 +1,20 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# Created By  : Ítalo Della Garza Silva
+# Created Date: date/month/time
+#
+# test_nenn_xgboost_amlsim.py: Tests for NENN GNN combined with XGBoost
+#
+
 import os
 import sys
 import torch
-import numpy as np
 import scipy
-from torch_geometric.data import Data
-from model_nenn_simplificado_2 import Nenn
 import xgboost as xgb
+import numpy as np
+from torch_geometric.data import Data
+from model_nenn import Nenn
 from sklearn.metrics import precision_score, recall_score, f1_score
 
 
@@ -58,136 +67,129 @@ def main():
     
 
     for execution in range(n_repeats):
-        while True:
-            print(f'EXECUTION {execution}\n')
-            # Model definition
-            model = Nenn(6,8,6,8,2)
-            model = model.to('cpu')
+        print(f'EXECUTION {execution}\n')
+        # Model definition
+        model = Nenn(6,8,6,8,2)
+        model = model.to('cpu')
 
-            # Cross Entropy Weight definition
+        # Cross Entropy Weight definition
 
-            weight = None
-            if dataset_name.endswith('51'):
-                weight = torch.Tensor([0.4, 0.6])
-            elif dataset_name.endswith('101'):
-                weight = torch.Tensor([0.15, 0.85])
-            elif dataset_name.endswith('201'):
-                weight=torch.Tensor([0.04, 0.96])
+        weight = None
+        if dataset_name.endswith('51'):
+            weight = torch.Tensor([0.4, 0.6])
+        elif dataset_name.endswith('101'):
+            weight = torch.Tensor([0.15, 0.85])
+        elif dataset_name.endswith('201'):
+            weight=torch.Tensor([0.04, 0.96])
 
-            loss = torch.nn.CrossEntropyLoss(weight=weight)
-
-            optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+        loss = torch.nn.CrossEntropyLoss(weight=weight)
 
 
-            # Training the model
-            model.train()
-            for epoch in range(10):
-                for ts, data in enumerate(train_data):
-                    # Reset gradients
-                    optimizer.zero_grad()
-                    # Send info to the model
-                    logits, _ = model(
-                        data.x.T.type(torch.FloatTensor),
-                        data.edge_attr.T.type(torch.FloatTensor),
-                        data.edge_to_edge_adj_matr.type(torch.FloatTensor),
-                        data.edge_to_node_adj_matr.type(torch.FloatTensor),
-                        data.node_to_edge_adj_matr.type(torch.FloatTensor),
-                        data.node_to_node_adj_matr.type(torch.FloatTensor)
-                    )
-                    # Calculate loss
-                    l = loss(logits, data.y)
-                    l.backward()
-                    # Update gradients
-                    optimizer.step()
-                if np.isnan(l.item()):
-                    model = None
-                    break
-                print('epoch =', epoch + 1, 'loss =', l.item())
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 
-            if not model:
-                continue
-            
-            # Obtain embeddings to train xgboost
-            embeddings_train = []
-            y_train = []
 
-            model.eval()
-            with torch.no_grad():
+        # Training the model
+        model.train()
+        for epoch in range(100):
+            for ts, data in enumerate(train_data):
+                # Reset gradients
+                optimizer.zero_grad()
+                # Send info to the model
+                logits, _ = model(
+                    data.x.T.type(torch.FloatTensor),
+                    data.edge_attr.T.type(torch.FloatTensor),
+                    data.edge_to_edge_adj_matr.T.type(torch.FloatTensor),
+                    data.edge_to_node_adj_matr.T.type(torch.FloatTensor),
+                    data.node_to_edge_adj_matr.T.type(torch.FloatTensor),
+                    data.node_to_node_adj_matr.T.type(torch.FloatTensor)
+                )
+                # Calculate loss
+                l = loss(logits, data.y)
+                l.backward()
+                # Update gradients
+                optimizer.step()
+            print('epoch =', epoch + 1, 'loss =', l.item())
 
-                for data in train_data:
-                    data.to('cpu')
-                    _, embedding_train = model(
-                        data.x.T.type(torch.FloatTensor),
-                        data.edge_attr.T.type(torch.FloatTensor),
-                        data.edge_to_edge_adj_matr.type(torch.FloatTensor),
-                        data.edge_to_node_adj_matr.type(torch.FloatTensor),
-                        data.node_to_edge_adj_matr.type(torch.FloatTensor),
-                        data.node_to_node_adj_matr.type(torch.FloatTensor)
-                    )
-                    embeddings_train += embedding_train.numpy().tolist()
-                    y_train += data.y.numpy().tolist()
-            model.train()
+        # Obtain embeddings to train xgboost
+        embeddings_train = []
+        y_train = []
 
-            embeddings_train = np.array(embeddings_train)
-            y_train = np.array(y_train)
+        model.eval()
+        with torch.no_grad():
 
-            # Obtain embeddings to test xgboost
-            embeddings_test = []
-            y_true = []
+            for data in train_data:
+                data.to('cpu')
+                _, embedding_train = model(
+                    data.x.T.type(torch.FloatTensor),
+                    data.edge_attr.T.type(torch.FloatTensor),
+                    data.edge_to_edge_adj_matr.T.type(torch.FloatTensor),
+                    data.edge_to_node_adj_matr.T.type(torch.FloatTensor),
+                    data.node_to_edge_adj_matr.T.type(torch.FloatTensor),
+                    data.node_to_node_adj_matr.T.type(torch.FloatTensor)
+                )
+                embeddings_train += embedding_train.numpy().tolist()
+                y_train += data.y.numpy().tolist()
+        model.train()
 
-            model.eval()
-            with torch.no_grad():
+        embeddings_train = np.array(embeddings_train)
+        y_train = np.array(y_train)
 
-                for data in test_data:
-                    data.to('cpu')
-                    _, embedding_test = model(
-                        data.x.T.type(torch.FloatTensor),
-                        data.edge_attr.T.type(torch.FloatTensor),
-                        data.edge_to_edge_adj_matr.type(torch.FloatTensor),
-                        data.edge_to_node_adj_matr.type(torch.FloatTensor),
-                        data.node_to_edge_adj_matr.type(torch.FloatTensor),
-                        data.node_to_node_adj_matr.type(torch.FloatTensor)
-                    )
-                    embeddings_test += embedding_test.numpy().tolist()
-                    y_true += data.y.numpy().tolist()
-            model.train()
+        # Obtain embeddings to test xgboost
+        embeddings_test = []
+        y_true = []
 
-            embeddings_test = np.array(embeddings_test)
-            y_true = np.array(y_true)
+        model.eval()
+        with torch.no_grad():
 
-            # Creating and training the model
+            for data in test_data:
+                data.to('cpu')
+                _, embedding_test = model(
+                    data.x.T.type(torch.FloatTensor),
+                    data.edge_attr.T.type(torch.FloatTensor),
+                    data.edge_to_edge_adj_matr.T.type(torch.FloatTensor),
+                    data.edge_to_node_adj_matr.T.type(torch.FloatTensor),
+                    data.node_to_edge_adj_matr.T.type(torch.FloatTensor),
+                    data.node_to_node_adj_matr.T.type(torch.FloatTensor)
+                )
+                embeddings_test += embedding_test.numpy().tolist()
+                y_true += data.y.numpy().tolist()
+        model.train()
 
-            print('Training XGBoost...')
-            xgb_model = xgb.XGBClassifier(objective="binary:logistic", random_state=42)
-            xgb_model.fit(embeddings_train, y_train)
+        embeddings_test = np.array(embeddings_test)
+        y_true = np.array(y_true)
 
-            # Evaluating the model
-            y_pred = xgb_model.predict(embeddings_test)
+        # Creating and training the model
 
-        
-            prec_macro = precision_score(y_true, y_pred, average='macro')
-            rec_macro = recall_score(y_true, y_pred, average='macro')
-            f1_macro = f1_score(y_true, y_pred, average='macro')
+        print('Training XGBoost...')
+        xgb_model = xgb.XGBClassifier(objective="binary:logistic", random_state=42)
+        xgb_model.fit(embeddings_train, y_train)
 
-            prec_0 = precision_score(y_true, y_pred, average='binary', labels=[0])
-            rec_0 = recall_score(y_true, y_pred, average='binary', labels=[0])
-            f1_0 = f1_score(y_true, y_pred, average='binary', labels=[0])
+        # Evaluating the model
+        y_pred = xgb_model.predict(embeddings_test)
 
-            print(f'\n Precision macro: {prec_macro}')
-            print(f'Recall macro: {rec_macro}')
-            print(f'F1 macro {f1_macro}')
-            print(f'\n Precision ilicit: {prec_0}')
-            print(f'Recall ilicit: {rec_0}')
-            print(f'F1 ilict: {f1_0}\n')
+    
+        prec_macro = precision_score(y_true, y_pred, average='macro')
+        rec_macro = recall_score(y_true, y_pred, average='macro')
+        f1_macro = f1_score(y_true, y_pred, average='macro')
 
-            precisions_macro.append(prec_macro)
-            recalls_macro.append(rec_macro)
-            f1s_macro.append(f1_macro)
+        prec_0 = precision_score(y_true, y_pred, average='binary', labels=[0])
+        rec_0 = recall_score(y_true, y_pred, average='binary', labels=[0])
+        f1_0 = f1_score(y_true, y_pred, average='binary', labels=[0])
 
-            precisions_0.append(prec_0)
-            recalls_0.append(rec_0)
-            f1s_0.append(f1_0)
-            break
+        print(f'\n Precision macro: {prec_macro}')
+        print(f'Recall macro: {rec_macro}')
+        print(f'F1 macro {f1_macro}')
+        print(f'\n Precision ilicit: {prec_0}')
+        print(f'Recall ilicit: {rec_0}')
+        print(f'F1 ilict: {f1_0}\n')
+
+        precisions_macro.append(prec_macro)
+        recalls_macro.append(rec_macro)
+        f1s_macro.append(f1_macro)
+
+        precisions_0.append(prec_0)
+        recalls_0.append(rec_0)
+        f1s_0.append(f1_0)
     
     result = ""
     metric, ci = get_confidence_intervals(precisions_macro, n_repeats)
@@ -210,11 +212,6 @@ def main():
     with open(f'results/{output}.txt', 'w') as file:
         file.write(result)
         file.close()
-
-        
-        
-
-
 
 
 if __name__ == '__main__':
