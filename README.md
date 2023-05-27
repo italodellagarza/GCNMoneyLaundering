@@ -6,6 +6,7 @@
 
 Códigos relativos à dissertação de mestrado apresentada ao Programa de Pós Graduação em Ciência da Computação, em 2023, de mesmo título.
 
+link: http://repositorio.ufla.br/handle/1/56843
 ## Instalação
 
 Para instalar o projeto, é necessário ter o [Python][1] e o [Virtualenv][2] instalados.
